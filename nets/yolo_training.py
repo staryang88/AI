@@ -10,14 +10,6 @@ from utils.utils_bbox import dist2bbox, make_anchors
 
 
 def select_candidates_in_gts(xy_centers, gt_bboxes, eps=1e-9, roll_out=False):
-    """select the positive anchor center in gt
-
-    Args:
-        xy_centers (Tensor): shape(h*w, 4)
-        gt_bboxes (Tensor): shape(b, n_boxes, 4)
-    Return:
-        (Tensor): shape(b, n_boxes, h*w)
-    """
     n_anchors       = xy_centers.shape[0]
     bs, n_boxes, _  = gt_bboxes.shape
     # 计算每个真实框距离每个anchors锚点的左上右下的距离，然后求min
@@ -39,17 +31,6 @@ def select_candidates_in_gts(xy_centers, gt_bboxes, eps=1e-9, roll_out=False):
 
 
 def select_highest_overlaps(mask_pos, overlaps, n_max_boxes):
-    """if an anchor box is assigned to multiple gts,
-        the one with the highest iou will be selected.
-
-    Args:
-        mask_pos (Tensor): shape(b, n_max_boxes, h*w)
-        overlaps (Tensor): shape(b, n_max_boxes, h*w)
-    Return:
-        target_gt_idx (Tensor): shape(b, h*w)
-        fg_mask (Tensor): shape(b, h*w)
-        mask_pos (Tensor): shape(b, n_max_boxes, h*w)
-    """
     # b, n_max_boxes, 8400 -> b, 8400
     fg_mask = mask_pos.sum(-2)
     # 如果有一个anchor被指派去预测多个真实框
@@ -87,22 +68,6 @@ class TaskAlignedAssigner(nn.Module):
 
     @torch.no_grad()
     def forward(self, pd_scores, pd_bboxes, anc_points, gt_labels, gt_bboxes, mask_gt):
-        """This code referenced to
-           https://github.com/Nioolek/PPYOLOE_pytorch/blob/master/ppyoloe/assigner/tal_assigner.py
-
-        Args:
-            pd_scores (Tensor)  : shape(bs, num_total_anchors, num_classes)
-            pd_bboxes (Tensor)  : shape(bs, num_total_anchors, 4)
-            anc_points (Tensor) : shape(num_total_anchors, 2)
-            gt_labels (Tensor)  : shape(bs, n_max_boxes, 1)
-            gt_bboxes (Tensor)  : shape(bs, n_max_boxes, 4)
-            mask_gt (Tensor)    : shape(bs, n_max_boxes, 1)
-        Returns:
-            target_labels (Tensor)  : shape(bs, num_total_anchors)
-            target_bboxes (Tensor)  : shape(bs, num_total_anchors, 4)
-            target_scores (Tensor)  : shape(bs, num_total_anchors, num_classes)
-            fg_mask (Tensor)        : shape(bs, num_total_anchors)
-        """
         # 获得batch_size 
         self.bs             = pd_scores.size(0)
         # 获得真实框中的最大框数量
@@ -116,15 +81,9 @@ class TaskAlignedAssigner(nn.Module):
                     torch.zeros_like(pd_scores).to(device), torch.zeros_like(pd_scores[..., 0]).to(device),
                     torch.zeros_like(pd_scores[..., 0]).to(device))
 
-        # b, max_num_obj, 8400
-        # mask_pos      满足在真实框内、是真实框topk最重合的正样本、满足mask_gt的锚点
-        # align_metric  某个先验点属于某个真实框的类的概率乘上某个先验点与真实框的重合程度
-        # overlaps      所有真实框和锚点的重合程度
-        mask_pos, align_metric, overlaps = self.get_pos_mask(pd_scores, pd_bboxes, gt_labels, gt_bboxes, anc_points, mask_gt)
 
-        # target_gt_idx     b, 8400     每个anchor符合哪个gt
-        # fg_mask           b, 8400     每个anchor是否有符合的gt
-        # mask_pos          b, max_num_obj, 8400    one_hot后的target_gt_idx
+        mask_pos, align_metric, overlaps = self.get_pos_mask(pd_scores, pd_bboxes, gt_labels, gt_bboxes, anc_points, mask_gt)
+x
         target_gt_idx, fg_mask, mask_pos = select_highest_overlaps(mask_pos, overlaps, self.n_max_boxes)
 
         # 指定目标到对应的anchor点上
@@ -237,13 +196,6 @@ class TaskAlignedAssigner(nn.Module):
         return is_in_topk.to(metrics.dtype)
 
     def get_targets(self, gt_labels, gt_bboxes, target_gt_idx, fg_mask):
-        """
-        Args:
-            gt_labels       : (b, max_num_obj, 1)
-            gt_bboxes       : (b, max_num_obj, 4)
-            target_gt_idx   : (b, h*w)
-            fg_mask         : (b, h*w)
-        """
 
         # 用于读取真实框标签, (b, 1)
         batch_ind       = torch.arange(end=self.bs, dtype=torch.int64, device=gt_labels.device)[..., None]
