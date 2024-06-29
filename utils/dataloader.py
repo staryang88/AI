@@ -402,25 +402,4 @@ def yolo_dataset_collate(batch):
     bboxes  = torch.from_numpy(np.concatenate(bboxes, 0)).type(torch.FloatTensor)
     return images, bboxes
 
-# # DataLoader中collate_fn使用
-# def yolo_dataset_collate(batch):
-#     images      = []
-#     n_max_boxes = 0
-#     bs          = len(batch)
-#     for i, (img, box) in enumerate(batch):
-#         images.append(img)
-#         n_max_boxes = max(n_max_boxes, len(box))
-    
-#     bboxes  = torch.zeros((bs, n_max_boxes, 4))
-#     labels  = torch.zeros((bs, n_max_boxes, 1))
-#     masks   = torch.zeros((bs, n_max_boxes, 1))
-    
-#     for i, (img, box) in enumerate(batch):
-#         _sub_length = len(box)
-#         bboxes[i, :_sub_length] = box[:, :4]
-#         labels[i, :_sub_length] = box[:, 4]
-#         masks[i, :_sub_length]  = 1
-    
-#     images  = torch.from_numpy(np.array(images)).type(torch.FloatTensor)
-#     bboxes  = torch.from_numpy(np.concatenate(bboxes, 0)).type(torch.FloatTensor)
-#     return images, bboxes, labels, masks
+
