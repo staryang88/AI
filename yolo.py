@@ -12,19 +12,8 @@ from utils.utils import (cvtColor, get_classes, preprocess_input,
                          resize_image, show_config)
 from utils.utils_bbox import DecodeBox
 
-'''
-训练自己的数据集必看注释！
-'''
 class YOLO(object):
     _defaults = {
-        #--------------------------------------------------------------------------#
-        #   使用自己训练好的模型进行预测一定要修改model_path和classes_path！
-        #   model_path指向logs文件夹下的权值文件，classes_path指向model_data下的txt
-        #
-        #   训练好后logs文件夹下存在多个权值文件，选择验证集损失较低的即可。
-        #   验证集损失较低不代表mAP较高，仅代表该权值在验证集上泛化性能较好。
-        #   如果出现shape不匹配，同时要注意训练时的model_path和classes_path参数的修改
-        #--------------------------------------------------------------------------#
         "model_path"        : 'logs/best_epoch_weights.pth',
         "classes_path"      : 'model_data/my_classes.txt',
         #---------------------------------------------------------------------#
@@ -290,7 +279,6 @@ class YOLO(object):
         image       = cvtColor(image)
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
-        #   也可以直接resize进行识别
         #---------------------------------------------------------#
         image_data  = resize_image(image, (self.input_shape[1],self.input_shape[0]), self.letterbox_image)
         #---------------------------------------------------------#
@@ -303,7 +291,7 @@ class YOLO(object):
             if self.cuda:
                 images = images.cuda()
             #---------------------------------------------------------#
-            #   将图像输入网络当中进行预测！
+            #   将图像输入网络当中进行预测
             #---------------------------------------------------------#
             dbox, cls, x, anchors, strides = self.net(images)
             outputs = [xi.split((xi.size()[1] - self.num_classes, self.num_classes), 1)[1] for xi in x]
@@ -390,7 +378,7 @@ class YOLO(object):
             if self.cuda:
                 images = images.cuda()
             #---------------------------------------------------------#
-            #   将图像输入网络当中进行预测！
+            #   将图像输入网络当中进行预测
             #---------------------------------------------------------#
             outputs = self.net(images)
             outputs = self.bbox_util.decode_box(outputs)
